@@ -17,6 +17,7 @@ def test(*args, **kwargs):
     local('python setup.py check')
     local('tox -r -c tox.ini')
 
+
 def psql(query, username=None, password=None):
     user = 'postgres'
     pwd_env = ''
@@ -29,6 +30,7 @@ def psql(query, username=None, password=None):
 
     local('{pwd} psql -U {user} -w -c "{cmd}"'.format(
         user=user, pwd=pwd_env, cmd=query))
+
 
 def setup(db_su_user=None, db_su_pass=None, *args, **kwargs):
     db_name = settings.DATABASES.get('default').get('NAME')
@@ -46,6 +48,6 @@ def setup(db_su_user=None, db_su_pass=None, *args, **kwargs):
 
     manage('migrate')
 
+
 def run():
     manage('runserver', args='8092')
-
