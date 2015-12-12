@@ -19,10 +19,10 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
     ],
     install_requires=[
-        'django==1.8.5',
+        'django==1.9',
         'psycopg2==2.6.1',
-        'djangorestframework==3.2.4',
-        'djangorestframework-camel-case==0.2.0'
+        'djangorestframework==3.3.1',
+        'Pillow==3.0.0',
     ],
     scripts=[
         'bin/helloworld_manage',
