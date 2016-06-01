@@ -18,6 +18,7 @@ lib/
 lib64/
 parts/
 sdist/
+blog_images/
 var/
 *.egg-info/
 .installed.cfg
@@ -37,6 +38,7 @@ pip-delete-this-directory.txt
 htmlcov/
 .tox/
 .coverage
+coverage/
 .coverage.*
 .cache
 nosetests.xml
@@ -60,3 +62,4 @@ target/
 
 # django
 media/
+.env.sh

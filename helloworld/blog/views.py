@@ -1,37 +1,29 @@
-from rest_framework.generics import (
-    ListCreateAPIView,
-    RetrieveUpdateDestroyAPIView
-)
-
+from rest_framework import viewsets
 
 from helloworld.blog.models import (
     Category,
-    BlogPost,
+    Comment,
+    BlogPost
 )
 
 from helloworld.blog.serializers import (
     CategorySerializer,
     BlogPostSerializer,
+    CommentSerializer,
 )
 
 
-class CategoryListView(ListCreateAPIView):
+class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
 
-class CategoryDetailView(RetrieveUpdateDestroyAPIView):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
-    lookup_field = 'pk'
-
-
-class BlogPostListView(ListCreateAPIView):
+class BlogPostViewSet(viewsets.ModelViewSet):
     queryset = BlogPost.objects.all()
     serializer_class = BlogPostSerializer
+    lookup_field = 'slug'
 
 
-class BlogPostDetailView(RetrieveUpdateDestroyAPIView):
-    queryset = BlogPost.objects.all()
-    serializer_class = BlogPostSerializer
-    lookup_field = 'pk'
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer

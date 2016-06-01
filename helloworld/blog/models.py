@@ -1,32 +1,49 @@
-import uuid
-
 from django.db import models
-from django.contrib.auth.models import User
+from django.utils import timezone
+from django.utils.text import slugify
+from helloworld.common.models import AbstractBase
 
 
-class Category(models.Model):
+class Category(AbstractBase):
     """
     A model to store the category of the blog posts
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=50, default='')
+    category = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.category
 
 
-class BlogPost(models.Model):
+class Comment(AbstractBase):
+    """
+    A BlogPost can have one or more comments
+    """
+    comment = models.TextField()
+
+    def __str__(self):
+        return self.comment
+
+
+class BlogPost(AbstractBase):
     """
     A model to store details pertaining to a blog post
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    category = models.ManyToManyField(Category)
-    user = models.ForeignKey(User)
-    title = models.CharField(default='', max_length=255)
-    slug = models.SlugField(default='', unique=True)
+    categories = models.ManyToManyField(Category)
+    comments = models.ManyToManyField(Comment)
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(blank=True)
     views = models.IntegerField(default=0)
-    content = models.TextField(default='')
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
+    content = models.TextField()
     is_published = models.BooleanField(default=False)
-    image = models.ImageField(upload_to='blog')
-    youtube_link = models.URLField(null=True)
+    image = models.ImageField(upload_to='blog_images', null=True, blank=True)
+    youtube_link = models.URLField(null=True, blank=True)
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        slug_field = self.title + '-' + str(timezone.now().date())
+        self.slug = slugify(slug_field)
+        super().save(*args, **kwargs)

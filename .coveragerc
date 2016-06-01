@@ -1,7 +1,7 @@
 [run]
 branch=True
 source=helloworld
-omit=helloworld/config/*, *tests*
+omit=helloworld/config/*, helloworld/**/migrations/*
 
 [report]
 show_missing=True
