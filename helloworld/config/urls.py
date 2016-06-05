@@ -17,10 +17,18 @@ from django.conf.urls import include, url
 from django.conf import settings
 
 
+app_patterns = [
+    url(r'^blog/', include('helloworld.blog.urls', namespace='blog')),
+    url(r'^users/',
+        include('helloworld.user.urls', namespace='users')),
+]
+
 urlpatterns = [
-    url(r'^api/blog/', include('helloworld.blog.urls', namespace='blog')),
+    url(r'^api/', include(app_patterns, namespace="api")),
     url(r'^accounts/',
         include('rest_framework.urls', namespace='rest_framework')),
+    url(r'^oauth2/', include(
+        'oauth2_provider.urls', namespace='oauth2_provider')),
     url(r'^static/(?P<path>.*)$',
         'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),
 ]
