@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 name = 'helloworld-backend'
-version = '0.0.1a1'
+version = '0.0.1b1'
 
 
 setup(
