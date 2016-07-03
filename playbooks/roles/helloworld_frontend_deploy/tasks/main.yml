@@ -1,0 +1,100 @@
+---
+
+- name: remove any existing installations
+  file: state=absent name={{install_dir}}
+  become: yes
+  tags: helloworld_frontend
+
+
+- name: make installation directories
+  file: state=directory name={{item}} owner={{deploy_user}}
+  with_items:
+    - "{{install_dir}}"
+    - "{{download_dir}}"
+    - "{{extraction_dir}}"
+  become: yes
+  tags: helloworld_frontend
+
+
+- name: download helloworld frontend
+  get_url: url={{download_url}} dest={{download_dir}} headers="Authorization:Bearer {{npm_auth_token}}"
+  become_user: "{{deploy_user}}"
+  become: yes
+  tags: helloworld_frontend
+
+- name: extract frontend
+  unarchive: >
+    copy=no
+    src="{{download_dir}}/{{helloworld_frontend_filename}}"
+    dest="{{extraction_dir}}"
+  become_user: "{{deploy_user}}"
+  become: yes
+  tags: helloworld_frontend
+
+- name: move frontend from bin folder
+  shell: "mv {{extraction_dir}}/{{archive_base_dir}}/* {{extraction_dir}}/"
+  become_user: "{{deploy_user}}"
+  become: yes
+  tags: helloworld_frontend
+
+- name: remove bin folder in extraction dir
+  file: state=absent name={{extraction_dir}}/{{archive_base_dir}}
+  become_user: "{{deploy_user}}"
+  become: yes
+  tags: helloworld_frontend
+
+- name: if ssl_on, set server url in settings.js
+  shell: >-
+     sed -i 's/http\:\/\/localhost\:[89]000/https:\/\/{{api_server_domain}}/g' {{extraction_dir}}/settings.js
+  become_user: "{{deploy_user}}"
+  become: yes
+  when: ssl_on
+  tags: helloworld_frontend
+
+- name: if ssl_off, set server url in settings.js
+  shell: >-
+     sed -i 's/http\:\/\/localhost\:[89]000/http:\/\/{{api_server_domain}}/g' {{extraction_dir}}/settings.js
+  become_user: "{{deploy_user}}"
+  become: yes
+  when: not ssl_on
+  tags: helloworld_frontend
+
+
+- name: set nginx sites-available
+  template: >
+    src=helloworld_frontend.nginx.conf
+    dest="/etc/nginx/sites-available/helloworld_frontend"
+    owner="www-data"
+  become: yes
+  tags: helloworld_frontend
+
+- name: set nginx sites-enabled
+  file: >
+    src="/etc/nginx/sites-available/helloworld_frontend"
+    dest="/etc/nginx/sites-enabled/helloworld_frontend"
+    state=link
+  become: yes
+  tags: helloworld_frontend
+
+- name: stop nginx
+  shell: >-
+    service nginx stop
+  become: yes
+  tags: helloworld_frontend
+
+- name: start nginx
+  shell: >-
+    service nginx start
+  become: yes
+  tags: helloworld_frontend
+
+- name: enable port 80 through firewall
+  ufw: port=80 proto=tcp rule=allow state=enabled
+  tags: helloworld_frontend
+  become: yes
+
+- name: enable port 443 through firewall
+  ufw: port=443 proto=tcp rule=allow state=enabled
+  tags: helloworld_frontend
+  become: yes
+  when: ssl_on

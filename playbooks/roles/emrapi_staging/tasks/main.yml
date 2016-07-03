@@ -1,0 +1,231 @@
+---
+- name: make installation directory
+  file: name={{ install_dir }} owner={{deploy_user}} group={{deploy_group}} state=directory
+  become: yes
+  tags: emrapi_staging
+
+- name: make log directory
+  file: name={{ log_dir }} group={{deploy_group}} owner={{deploy_user}} state=directory mode=u=rwx,g=rwx,o=r
+  become: yes
+  tags: emrapi_staging
+
+- name: Install emrapi_staging
+  pip: >-
+    name=emr_backend version={{emrapi_staging_version}} virtualenv={{ venv_dir }} virtualenv_python=/usr/bin/python3.5
+  become_user: "{{deploy_user}}"
+  become: yes
+  tags: emrapi_staging
+
+- name: Create env file
+  template: src={{env_file}} dest={{install_dir}}/env.sh
+  become_user: "{{deploy_user}}"
+  become: yes
+  tags: emrapi_staging
+
+- name: Create initialization file
+  template: src={{initialization_file}} dest={{install_dir}}/initialize.sh
+  become_user: "{{deploy_user}}"
+  become: yes
+  tags: emrapi_staging
+
+- name: stop supervisord
+  service: name=supervisor state=stopped
+  become: yes
+  tags: emrapi_staging
+
+- name: Add custom database user for management
+  become_user: postgres
+  become: yes
+  shell: >-
+    if psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='{{pg_login_user}}'" | grep -q 1 ; then
+    echo "role '{{pg_login_user}}' exists";
+    else createuser --superuser {{pg_login_user}};
+    fi
+  when: setup_new_db
+  tags: ["emrapi_staging", "postgresql_user", "postgresql_create_user"]
+
+- name: alter custom user password
+  become_user: postgres
+  become: yes
+  shell: >
+    psql -c "ALTER ROLE {{pg_login_user}} WITH PASSWORD '{{pg_login_password}}';"
+  when: setup_new_db
+  tags: ["emrapi_staging", "postgresql_user", "postgresql_change_user_password"]
+
+- name: Add db for custom user for management
+  become_user: postgres
+  become: yes
+  shell: >
+    if psql -lqt | cut -d \| -f 1 | grep -wq {{pg_login_user}}; then
+    echo "database {{pg_login_user}} exists";
+    else psql -c "CREATE DATABASE {{pg_login_user}};";
+    fi
+  when: setup_new_db
+  tags: ["emrapi_staging", "postgresql_user", "postgresql_database"]
+
+
+- name: setup database user
+  postgresql_user: >
+    name={{db_user}}
+    password={{db_pass}}
+    state=present
+    role_attr_flags=LOGIN,SUPERUSER,CREATEDB,CREATEROLE,REPLICATION
+    login_host={{db_host}}
+    login_user={{pg_login_user}}
+    login_password={{pg_login_password}}
+    port={{db_port}}
+  when: setup_new_db
+  tags: emrapi_staging
+
+
+- name: drop database
+  postgresql_db: >
+    name={{db_name}}
+    owner={{pg_login_user}}
+    login_host={{db_host}}
+    login_user={{pg_login_user}}
+    login_password={{pg_login_password}}
+    port={{db_port}}
+    state=absent
+  when: setup_new_db
+  tags: emrapi_staging
+
+
+- name: setup database
+  postgresql_db: >
+    name={{db_name}}
+    owner={{pg_login_user}}
+    login_host={{db_host}}
+    login_user={{pg_login_user}}
+    login_password={{pg_login_password}}
+    port={{db_port}}
+    state=present
+  when: setup_new_db
+  tags: emrapi_staging
+
+
+- name: grant privileges to user on database
+  postgresql_privs: >
+    db={{db_name}}
+    state=present
+    type=database
+    role={{db_user}}
+    privs=ALL
+    login_host={{db_host}}
+    login_user={{pg_login_user}}
+    login_password={{pg_login_password}}
+    port={{db_port}}
+  when: setup_new_db
+  tags: emrapi_staging
+
+- name: perform django migration
+  shell: '. {{ install_dir }}/env.sh && {{ django_manage }} migrate --noinput'
+  become_user: "{{deploy_user}}"
+  become: yes
+  tags: emrapi_staging
+
+- name: load bootstrap data
+  shell: ". {{install_dir}}/env.sh && {{ django_manage }} bootstrap '{{venv_dir}}/lib/python3.5/site-packages/emrapp/data/*/*.json'"
+  become_user: "{{deploy_user}}"
+  become: yes
+  tags: emrapi_staging
+
+- name: load factory data
+  shell: ". {{install_dir}}/env.sh && {{ venv_dir }}/bin/emrfactories dev"
+  become_user: "{{deploy_user}}"
+  become: yes
+  tags: emrapi_staging
+
+- name: make static directory
+  file: name={{ static_dir }} owner={{deploy_user}} group={{deploy_group}} state=directory
+  become_user: "{{deploy_user}}"
+  become: yes
+  tags: emrapi_staging
+
+- name: collect static files
+  shell: '. {{install_dir}}/env.sh && {{django_manage}} collectstatic --link --noinput --clear'
+  become_user: "{{deploy_user}}"
+  become: yes
+  tags: emrapi_staging
+
+
+- name: set emrapi_staging to nginx sites-available
+  template: >
+    src=emrapi_staging.nginx.conf
+    dest="/etc/nginx/sites-available/emrapi_staging"
+    owner="www-data"
+  tags: emrapi_staging
+  become: yes
+
+- name: set nginx sites-available to sites-enabled
+  file: >
+    src="/etc/nginx/sites-available/emrapi_staging"
+    dest="/etc/nginx/sites-enabled/emrapi_staging"
+    state=link
+  tags: emrapi_staging
+  become: yes
+
+- name: stop nginx
+  service: >-
+    name=nginx state=stopped
+  become: yes
+  tags: emrapi_staging
+
+- name: start nginx
+  service: >-
+    name=nginx state=started
+  become: yes
+  tags: emrapi_staging
+
+- name: add runfiles for supervisor
+  template: src={{ item.src }} dest={{install_dir}}/{{ item.dest }}
+  tags: emrapi_staging
+  become_user: "{{deploy_user}}"
+  become: yes
+  with_items:
+      - { src: "emrapi_staging.run.sh", dest: "run.sh" }
+      - { src: "emrapi_staging.celery_worker.sh", dest: "celery_worker.sh" }
+      - { src: "emrapi_staging.celery_beat.sh", dest: "celery_beat.sh" }
+
+- name: add supervisor config to supervisord conf.d
+  template: src=emrapi_staging.supervisor.conf dest={{supervisor_conf_dir}}/emrapi_staging.conf
+  tags: emrapi_staging
+  become: yes
+
+- name: make celery log directory
+  file: name={{ log_dir }}/celery owner={{deploy_user}} group={{deploy_group}} state=directory
+  become: yes
+  tags: emrapi_staging
+
+- name: add celery beat and celery worker config to supervisord conf.d
+  template: src={{ item.src }} dest={{supervisor_conf_dir}}/{{ item.dest }}
+  tags: emrapi_staging
+  become: yes
+  with_items:
+      - { src: "emrapi_staging.celery.conf", dest: "emrapi_staging.celery.conf"}
+      - { src: "emrapi_staging.celerybeat.conf", dest: "emrapi_staging.celerybeat.conf"}
+
+- name: stop supervisor
+  service: name=supervisor state=stopped
+  become: yes
+  tags: emrapi_staging
+
+- name: start supervisor
+  service: name=supervisor state=started
+  become: yes
+  tags: emrapi_staging
+
+- name: allow port 80
+  ufw: port=80 proto=tcp rule=allow
+  tags: emrapi_staging
+  become: yes
+
+- name: enable port 443 through firewall
+  ufw: port=443 proto=tcp rule=allow state=enabled
+  tags: emrapi_staging
+  become: yes
+
+- name: start the redis server
+  service: name=redis-server state=started
+  become: yes
+  tags: emrapi_staging

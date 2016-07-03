@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><testsuite errors="1" failures="0" name="pytest" skips="0" tests="0" time="0.097"><testcase classname="" file="playbooks/deployment_acceptance.py" name="playbooks.deployment_acceptance" time="0"><error message="collection failure">/Users/user/.virtualenvs/emr2/lib/python2.7/site-packages/_pytest/python.py:610: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+/Users/user/.virtualenvs/emr2/lib/python2.7/site-packages/py/_path/local.py:650: in pyimport
+    __import__(modname)
+E     File &quot;/Users/user/Projects/savannah/emr-backend/playbooks/deployment_acceptance.py&quot;, line 21
+E   SyntaxError: Non-ASCII character &apos;\xc2&apos; in file /Users/user/Projects/savannah/emr-backend/playbooks/deployment_acceptance.py on line 21, but no encoding declared; see http://python.org/dev/peps/pep-0263/ for details</error></testcase></testsuite>

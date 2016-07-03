@@ -1,0 +1,27 @@
+---
+- name: Install ufw
+  apt: name=ufw state=present
+  tags: ufw
+  become: yes
+
+- name: deny all by default
+  ufw: policy=deny
+  become: yes
+  tags: ufw
+
+- name: allow openssh
+  ufw: rule=allow name=OpenSSH
+  tags: ufw
+  become: yes
+
+- name: allow ssh
+  ufw: rule=limit port={{ssh_port}} proto=tcp
+  tags: ufw
+  become: yes
+
+- name: enable logging
+  ufw: logging=full
+  tags: ufw
+  become: yes
+  notify:
+    - enable ufw

@@ -1,0 +1,26 @@
+---
+
+install_dir: "/webapps/helloworld_frontend"
+download_dir: "{{install_dir}}/downloads"
+extraction_dir: "{{install_dir}}/frontend"
+package_name: "helloworld"
+npm_auth_token: "am9rkGR2Rx6F7NzLQDiJpZobq+EwBh0Ry5EImuuYkOM="
+helloworld_frontend_version: "0.0.1-beta.1"
+archive_base_dir: "package/bin"
+helloworld_frontend_filename: "{{package_name}}-{{helloworld_frontend_version}}.tgz"
+download_url: "https://npm.ikosenn.me/{{package_name}}/-/{{helloworld_frontend_filename}}"
+server_url: "http://localhost:8092/"
+debug: "true"
+restrict_actions: [
+]
+client_id: ""
+token_url: "/oauth2/token/"
+authorize_url: "/oauth2/authorize/"
+revoke_token_url: "/oauth2/revoke_token/"
+user_info_url: "/user/me/"
+redirect_url: "/complete/"
+user_profile: "/manage/profile/"
+scopes: [
+]
+ssl_on: false
+server_name: localhost

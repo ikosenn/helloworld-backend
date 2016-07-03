@@ -1,0 +1,15 @@
+---
+- name: Install tripwire
+  apt: name=tripwire state=present
+  become: yes
+  tags: ["tripwire"]
+
+- name: Initialize tripwire db
+  command: tripwire --init
+  become: yes
+  tags: tripwire
+
+- name: Initial checks
+  command: tripwire --check
+  become: yes
+  tags: tripwire

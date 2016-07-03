@@ -1,0 +1,5 @@
+---
+pg_host: localhost
+pg_port: 5432
+pg_login_user: emr_staging_user
+pg_login_password: ready+player-one

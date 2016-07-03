@@ -1,0 +1,6 @@
+# development hosts file
+[helloworld.co.ke]
+helloworld.co.ke sudo_magick_needed=true
+
+[emrweb_staging]
+emr-web-stg.slade360emr.com sudo_magick_needed=true
